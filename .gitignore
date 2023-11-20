@@ -31,3 +31,6 @@ Thumbs.db
 *.egg
 build/
 dist/
+
+# Other files
+file_struct.py
