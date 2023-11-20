@@ -1,0 +1,33 @@
+*.pyc
+*__pycache__/
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Virtual environment
+venv/
+env/
+
+# IDE/Editor
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# If using dotenv
+.env
+
+# Compiled Python files
+*.pyo
+*.pyd
+
+# Python egg and build directories
+*.egg-info/
+*.egg
+build/
+dist/
