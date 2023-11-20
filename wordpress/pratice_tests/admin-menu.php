@@ -3,15 +3,16 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 function practice_tests_plugin_menu() {
-    add_menu_page('Practice Tests Settings', 'Dashboard', 'manage_options', 'practice-tests-plugin', 'practice_tests_dashboard_page');
+    add_menu_page('Practice Tests Settings', 'Practice Tests', 'manage_options', 'practice-tests-plugin', 'practice_tests_dashboard_page');
 
     // Other submenus
     add_submenu_page('practice-tests-plugin', 'Add Question', 'Add Question', 'manage_options', 'practice-tests-add-question', 'practice_tests_add_question_page');
+    add_submenu_page('practice-tests-plugin', 'View/Edit Question', 'View/Edit Question', 'manage_options', 'practice-tests-view-edit-question', 'practice_tests_view_edit_question_page');
     // ... add other submenus ...
 }
 
 // Function to display the plugin admin page
-function practice_tests_plugin_settings_page() {
+function practice_tests_add_question_page() {
     ?>
     <div class="wrap">
         <h2>Practice Tests</h2>
@@ -35,6 +36,16 @@ function practice_tests_plugin_settings_page() {
             </p>
             <input type="submit" name="submit_csv" value="Upload CSV">
         </form>
+    </div>
+    <?php
+}
+
+// Function to display the plugin admin page
+function practice_tests_view_edit_question_page() {
+    ?>
+    <div class="wrap">
+        <h2>View / Edit Questions</h2>
+        <p>This page will have a dropdown to select tables with questions. The table will render and the questions, answers, correct answer, and explanations will all be editable.</p>
     </div>
     <?php
 }
