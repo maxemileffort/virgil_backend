@@ -2,6 +2,14 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+function practice_tests_plugin_menu() {
+    add_menu_page('Practice Tests Settings', 'Dashboard', 'manage_options', 'practice-tests-plugin', 'practice_tests_dashboard_page');
+
+    // Other submenus
+    add_submenu_page('practice-tests-plugin', 'Add Question', 'Add Question', 'manage_options', 'practice-tests-add-question', 'practice_tests_add_question_page');
+    // ... add other submenus ...
+}
+
 // Function to display the plugin admin page
 function practice_tests_plugin_settings_page() {
     ?>
@@ -29,20 +37,6 @@ function practice_tests_plugin_settings_page() {
         </form>
     </div>
     <?php
-}
-
-function practice_tests_plugin_menu() {
-    add_menu_page('Practice Tests Settings', 'Practice Tests', 'manage_options', 'practice-tests-plugin', 'practice_tests_dashboard_page');
-
-    // New dashboard submenu
-    add_submenu_page('practice-tests-plugin', 'Dashboard', 'Dashboard', 'manage_options', 'practice-tests-dashboard', 'practice_tests_dashboard_page');
-
-    // Other submenus
-    add_submenu_page('practice-tests-plugin', 'Add Question', 'Add Question', 'manage_options', 'practice-tests-add-question', 'practice_tests_add_question_page');
-    // ... add other submenus ...
-
-    // Ensure other subpages are still included
-    // ...
 }
 
 // Function to render the dashboard page
