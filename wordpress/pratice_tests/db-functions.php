@@ -138,3 +138,233 @@ function practice_tests_handle_users_csv_upload($file) {
         fclose($handle);
     }
 }
+
+global $wpdb;
+
+/**
+ * Create Tables for Managing Questions
+ */
+function create_questions_table() {
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+
+    $table_name = $wpdb->prefix . 'practice_questions';
+    $charset_collate = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE $table_name (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        question_type varchar(50) NOT NULL,
+        question_content text NOT NULL,
+        answer_options text,
+        correct_answer varchar(255),
+        explanation text,
+        subject_area varchar(100),
+        PRIMARY KEY  (id)
+    ) $charset_collate;";
+
+    dbDelta($sql);
+}
+
+/**
+ * Add a New Question
+ */
+function add_question($question_type, $question_content, $answer_options, $correct_answer, $explanation, $subject_area) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_questions';
+
+    $wpdb->insert(
+        $table_name,
+        array(
+            'question_type' => $question_type,
+            'question_content' => $question_content,
+            'answer_options' => maybe_serialize($answer_options),
+            'correct_answer' => $correct_answer,
+            'explanation' => $explanation,
+            'subject_area' => $subject_area
+        )
+    );
+}
+
+/**
+ * Get a Specific Question by ID
+ */
+function get_question($id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_questions';
+
+    return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+}
+
+/**
+ * Update a Question
+ */
+function update_question($id, $question_type, $question_content, $answer_options, $correct_answer, $explanation, $subject_area) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_questions';
+
+    $wpdb->update(
+        $table_name,
+        array(
+            'question_type' => $question_type,
+            'question_content' => $question_content,
+            'answer_options' => maybe_serialize($answer_options),
+            'correct_answer' => $correct_answer,
+            'explanation' => $explanation,
+            'subject_area' => $subject_area
+        ),
+        array('id' => $id)
+    );
+}
+
+/**
+ * Delete a Question
+ */
+function delete_question($id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_questions';
+
+    $wpdb->delete($table_name, array('id' => $id));
+}
+
+/**
+ * Create Tables for Managing Tests and Users
+ */
+function create_tests_users_tables() {
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+
+    // Creating table for Tests
+    $tests_table_name = $wpdb->prefix . 'practice_tests';
+    $tests_sql = "CREATE TABLE $tests_table_name (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        test_name varchar(255) NOT NULL,
+        test_description text,
+        test_type varchar(50) NOT NULL,
+        PRIMARY KEY  (id)
+    ) $charset_collate;";
+
+    // Creating table for Users
+    $users_table_name = $wpdb->prefix . 'practice_users';
+    $users_sql = "CREATE TABLE $users_table_name (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        user_email varchar(100) NOT NULL UNIQUE,
+        user_password varchar(255) NOT NULL,
+        user_role varchar(50) NOT NULL,
+        user_status varchar(50) NOT NULL,
+        registration_date datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id)
+    ) $charset_collate;";
+
+    dbDelta($tests_sql);
+    dbDelta($users_sql);
+}
+
+/**
+ * Add a New Test
+ */
+function add_test($test_name, $test_description, $test_type) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_tests';
+
+    $wpdb->insert(
+        $table_name,
+        array(
+            'test_name' => $test_name,
+            'test_description' => $test_description,
+            'test_type' => $test_type
+        )
+    );
+}
+
+/**
+ * Get a Specific Test by ID
+ */
+function get_test($id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_tests';
+
+    return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+}
+
+/**
+ * Update a Test
+ */
+function update_test($id, $test_name, $test_description, $test_type) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_tests';
+
+    $wpdb->update(
+        $table_name,
+        array(
+            'test_name' => $test_name,
+            'test_description' => $test_description,
+            'test_type' => $test_type
+        ),
+        array('id' => $id)
+    );
+}
+
+/**
+ * Delete a Test
+ */
+function delete_test($id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_tests';
+
+    $wpdb->delete($table_name, array('id' => $id));
+}
+
+/**
+ * Add a New User
+ */
+function add_user($user_email, $user_password, $user_role, $user_status) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_users';
+
+    $wpdb->insert(
+        $table_name,
+        array(
+            'user_email' => $user_email,
+            'user_password' => wp_hash_password($user_password),
+            'user_role' => $user_role,
+            'user_status' => $user_status
+        )
+    );
+}
+
+/**
+ * Get a Specific User by ID
+ */
+function get_user($id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_users';
+
+    return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+}
+
+/**
+ * Update a User
+ */
+function update_user($id, $user_email, $user_password, $user_role, $user_status) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_users';
+
+    $wpdb->update(
+        $table_name,
+        array(
+            'user_email' => $user_email,
+            'user_password' => wp_hash_password($user_password),
+            'user_role' => $user_role,
+            'user_status' => $user_status
+        ),
+        array('id' => $id)
+    );
+}
+
+/**
+ * Delete a User
+ */
+function delete_user($id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'practice_users';
+
+    $wpdb->delete($table_name, array('id' => $id));
+}
