@@ -20,10 +20,34 @@ add_action('admin_menu', 'practice_tests_plugin_menu');
 // Check for form submissions
 if (isset($_POST['submit_single_question'])) {
     // Handle single question addition
-    practice_tests_add_single_question($_POST['question'], $_POST['answer']);
+    practice_tests_add_single_question($_POST['testtype'], 
+                                       $_POST['passage'], 
+                                       $_POST['question'], 
+                                       $_POST['answerchoices1'],
+                                       $_POST['answerchoices2'],
+                                       $_POST['answerchoices3'],
+                                       $_POST['answerchoices4'],
+                                       $_POST['answerchoices5'],
+                                       $_POST['answercorrect'],
+                                       $_POST['explanation'],
+                                       $_POST['subjectarea'],
+                                       $_POST['skill'],);
 }
 
-if (isset($_POST['submit_csv'])) {
+if (isset($_POST['submit_questions_csv'])) {
     // Handle CSV upload
     practice_tests_handle_csv_upload($_FILES['questions_csv']);
+}
+
+if (isset($_POST['submit_single_user'])) {
+    // Handle single user addition
+    practice_tests_add_single_user($_POST['username'], 
+                                    $_POST['useremail'], 
+                                    $_POST['useraction'],
+                                    $_POST['userstatus'],);
+}
+
+if (isset($_POST['submit_users_csv'])) {
+    // Handle user CSV upload
+    practice_tests_handle_users_csv_upload($_FILES['users_csv']);
 }
