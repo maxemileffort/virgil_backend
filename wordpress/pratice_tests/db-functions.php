@@ -312,59 +312,59 @@ function delete_test($id) {
     $wpdb->delete($table_name, array('id' => $id));
 }
 
-/**
- * Add a New User
- */
-function add_user($user_email, $user_password, $user_role, $user_status) {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'practice_users';
+// /**
+//  * Add a New Subscriber
+//  */
+// function add_sub($sub_email, $sub_password, $sub_role, $sub_status) {
+//     global $wpdb;
+//     $table_name = $wpdb->prefix . 'practice_subs';
 
-    $wpdb->insert(
-        $table_name,
-        array(
-            'user_email' => $user_email,
-            'user_password' => wp_hash_password($user_password),
-            'user_role' => $user_role,
-            'user_status' => $user_status
-        )
-    );
-}
+//     $wpdb->insert(
+//         $table_name,
+//         array(
+//             'sub_email' => $sub_email,
+//             'sub_password' => wp_hash_password($sub_password),
+//             'sub_role' => $sub_role,
+//             'sub_status' => $sub_status
+//         )
+//     );
+// }
 
-/**
- * Get a Specific User by ID
- */
-function get_user($id) {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'practice_users';
+// /**
+//  * Get a Specific Subscriber by ID
+//  */
+// function get_sub($id) {
+//     global $wpdb;
+//     $table_name = $wpdb->prefix . 'practice_subs';
 
-    return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
-}
+//     return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+// }
 
-/**
- * Update a User
- */
-function update_user($id, $user_email, $user_password, $user_role, $user_status) {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'practice_users';
+// /**
+//  * Update a Subscriber
+//  */
+// function update_sub($id, $sub_email, $sub_password, $sub_role, $sub_status) {
+//     global $wpdb;
+//     $table_name = $wpdb->prefix . 'practice_subs';
 
-    $wpdb->update(
-        $table_name,
-        array(
-            'user_email' => $user_email,
-            'user_password' => wp_hash_password($user_password),
-            'user_role' => $user_role,
-            'user_status' => $user_status
-        ),
-        array('id' => $id)
-    );
-}
+//     $wpdb->update(
+//         $table_name,
+//         array(
+//             'sub_email' => $sub_email,
+//             'sub_password' => wp_hash_password($sub_password),
+//             'sub_role' => $sub_role,
+//             'sub_status' => $sub_status
+//         ),
+//         array('id' => $id)
+//     );
+// }
 
-/**
- * Delete a User
- */
-function delete_user($id) {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'practice_users';
+// /**
+//  * Delete a Subscriber
+//  */
+// function delete_sub($id) {
+//     global $wpdb;
+//     $table_name = $wpdb->prefix . 'practice_subs';
 
-    $wpdb->delete($table_name, array('id' => $id));
-}
+//     $wpdb->delete($table_name, array('id' => $id));
+// }
