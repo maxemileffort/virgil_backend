@@ -38,6 +38,8 @@ function create_plugin_database_tables() {
         questions_answered int(5) NOT NULL,
         best_subject text NOT NULL,
         worst_subject text NOT NULL,
+        fast_subject text NOT NULL,
+        slow_subject text NOT NULL,
         PRIMARY KEY  (id)
     );";
 
@@ -47,19 +49,24 @@ function create_plugin_database_tables() {
 }
 
 // Function to add a single question to the database
-function practice_tests_add_single_question($question, $answer) {
+function practice_tests_add_single_question($testtype,$passage,
+                                            $question, $answerchoices1,
+                                            $answerchoices2,$answerchoices3,
+                                            $answerchoices4,$answerchoices5,
+                                            $answercorrect,$explanation,
+                                            $subjectarea,$skill,) {
     global $wpdb;
     $table_name = $wpdb->prefix . 'practice_test_questions'; // Change to your table name
-
-    // Sanitize data
-    $question = sanitize_text_field($question);
-    $answer = sanitize_text_field($answer);
 
     // Insert into database
     $wpdb->insert(
         $table_name,
-        array('question' => $question, 'answer' => $answer),
-        array('%s', '%s')
+        array('testtype'=>$testtype,'passage'=>$passage,
+        'question'=>$question, 'answerchoices1'=>$answerchoices1,
+        'answerchoices2'=>$answerchoices2,'answerchoices3'=>$answerchoices3,
+        'answerchoices4'=>$answerchoices4,'answerchoices5'=>$answerchoices5,
+        'answercorrect'=>$answercorrect,'explanation'=>$explanation,
+        'subjectarea'=>$subjectarea,'skill'=>$skill)
     );
 }
 

@@ -2,6 +2,8 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+include_once plugin_dir_path(__FILE__) . 'utilities.php';
+
 function practice_tests_plugin_menu() {
     add_menu_page('Practice Tests Settings', 'Practice Tests', 'manage_options', 'practice-tests-plugin', 'practice_tests_dashboard_page');
 
@@ -96,6 +98,12 @@ function practice_tests_add_question_page() {
                 <label for="explanation">Explanation:</label>
                 <input type="text" name="explanation" id="explanation">
             </p>
+            <p>
+                    <label for="subjectarea">Subject Area:</label>
+                    <input type="text" name="subjectarea" id="subjectarea">
+                    <label for="skill">Skill:</label>
+                    <input type="text" name="skill" id="skill">
+                </p>
             <input type="submit" name="submit_single_question" value="Add Question">
 
             <!-- CSV Upload -->
@@ -115,6 +123,9 @@ function practice_tests_view_edit_question_page() {
     <div class="wrap">
         <h2>View / Edit Questions</h2>
         <p>This page will have a dropdown to select tables with questions. The table will render and the questions, answers, correct answer, and explanations will all be editable.</p>
+        <?php
+            render_question_bank_table()
+        ?>
     </div>
     <?php
 }
