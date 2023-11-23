@@ -124,7 +124,7 @@ function practice_tests_view_edit_question_page() {
         <h2>View / Edit Questions</h2>
         <p>This page will have a dropdown to select tables with questions. The table will render and the questions, answers, correct answer, and explanations will all be editable.</p>
         <?php
-            render_question_bank_table()
+            render_question_bank_table(); // inside utilities.php
         ?>
     </div>
     <?php

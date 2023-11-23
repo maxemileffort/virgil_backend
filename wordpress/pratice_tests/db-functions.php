@@ -70,6 +70,51 @@ function practice_tests_add_single_question($testtype,$passage,
     );
 }
 
+// Function to handle CSV upload
+function practice_tests_handle_csv_upload($file) {
+    // Check for file upload errors and validate file type (CSV)
+    if ($file['error'] != UPLOAD_ERR_OK) {
+        echo "Error uploading file.";
+        return;
+    }
+
+    // Read the file
+    if (($handle = fopen($file['tmp_name'], "r")) !== FALSE) {
+        $isHeaderRow = true; // Flag to check if it's the first row (header)
+        while (($data = fgetcsv($handle, 1000, "|")) !== FALSE) {
+
+            // Skip the header row
+            if ($isHeaderRow) {
+                $isHeaderRow = false;
+                continue;
+            }
+
+            // Assuming the CSV columns are question, answer
+            $testtype = $data[0];
+            $passage = $data[1];
+            $question = $data[2];
+            $answerchoices1 = $data[3];
+            $answerchoices2 = $data[4];
+            $answerchoices3 = $data[5];
+            $answerchoices4 = $data[6];
+            $answerchoices5 = $data[7];
+            $answercorrect = $data[8];
+            $explanation = $data[9];
+            $subjectarea = $data[10];
+            $skill = $data[11];
+
+            // Insert into database
+            practice_tests_add_single_question($testtype,$passage,
+                                            $question, $answerchoices1,
+                                            $answerchoices2,$answerchoices3,
+                                            $answerchoices4,$answerchoices5,
+                                            $answercorrect,$explanation,
+                                            $subjectarea,$skill);
+        }
+        fclose($handle);
+    }
+}
+
 // Function to add a single user to the database
 function practice_tests_add_single_user($question, $answer) {
     # TODO - match user form
@@ -86,35 +131,6 @@ function practice_tests_add_single_user($question, $answer) {
         array('question' => $question, 'answer' => $answer),
         array('%s', '%s')
     );
-}
-
-// Function to handle CSV upload
-function practice_tests_handle_csv_upload($file) {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'practice_test_questions'; // Change to your table name
-
-    // Check for file upload errors and validate file type (CSV)
-    if ($file['error'] != UPLOAD_ERR_OK) {
-        echo "Error uploading file.";
-        return;
-    }
-
-    // Read the file
-    if (($handle = fopen($file['tmp_name'], "r")) !== FALSE) {
-        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-            // Assuming the CSV columns are question, answer
-            $question = sanitize_text_field($data[0]);
-            $answer = sanitize_text_field($data[1]);
-
-            // Insert into database
-            $wpdb->insert(
-                $table_name,
-                array('question' => $question, 'answer' => $answer),
-                array('%s', '%s')
-            );
-        }
-        fclose($handle);
-    }
 }
 
 // Function to handle CSV upload
