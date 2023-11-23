@@ -22,7 +22,7 @@ function practice_test_quiz_shortcode() {
 
         // Display the answer choices
         for ($i = 1; $i <= 5; $i++) {
-            $choice_col = 'answerchoice' . $i;
+            $choice_col = 'answerchoices' . $i;
             if (!empty($question->$choice_col)) {
                 $output .= '<label><input type="radio" name="question' . esc_attr($question->id) . '" value="' . $i . '"> ' . esc_html($question->$choice_col) . '</label><br>';
             }
