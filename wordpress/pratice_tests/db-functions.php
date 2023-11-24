@@ -9,6 +9,7 @@ function create_plugin_database_tables() {
     // Define table names
     $table_questions = $wpdb->prefix . 'practice_test_questions';
     $table_subs = $wpdb->prefix . 'practice_test_subs';
+    $table_tests = $wpdb->prefix . 'practice_test_tests';
 
     // SQL to create your tables
     $sql_questions = "CREATE TABLE $table_questions (
@@ -30,22 +31,36 @@ function create_plugin_database_tables() {
 
     $sql_subs = "CREATE TABLE $table_subs (
         id mediumint(9) NOT NULL AUTO_INCREMENT,
-        username text not null,
-        email text NOT NULL,
-        password text NOT NULL,
-        status text NOT NULL,
+        user_name varchar(50) NOT NULL,
+        user_email varchar(100) NOT NULL UNIQUE,
+        user_password varchar(255) NOT NULL,
+        user_role varchar(50) NOT NULL,
+        user_status varchar(50) NOT NULL,
+        registration_date datetime DEFAULT CURRENT_TIMESTAMP,
         tests_taken int(5) NOT NULL,
         questions_answered int(5) NOT NULL,
         best_subject text NOT NULL,
         worst_subject text NOT NULL,
         fast_subject text NOT NULL,
         slow_subject text NOT NULL,
+        plan text NOT NULL,
+        PRIMARY KEY  (id)
+    );";
+
+    // Creating table for Tests
+    $tests_sql = "CREATE TABLE $table_tests (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        test_name varchar(255) NOT NULL,
+        test_description text,
+        test_type varchar(50) NOT NULL,
+        test_questions JSON default null,
         PRIMARY KEY  (id)
     );";
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql_questions);
     dbDelta($sql_subs);
+    dbDelta($tests_sql);
 }
 
 // Function to add a single question to the database
@@ -116,21 +131,42 @@ function practice_tests_handle_csv_upload($file) {
 }
 
 // Function to add a single user to the database
-function practice_tests_add_single_user($question, $answer) {
-    # TODO - match user form
+function practice_tests_add_single_user($user_name, $user_email,
+                                        $user_password, $user_action,
+                                        $user_status,$user_role,$plan) {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'practice_test_subs'; // Change to your table name
+    require_once(ABSPATH . 'wp-includes/pluggable.php');
 
-    // Sanitize data
-    $question = sanitize_text_field($question);
-    $answer = sanitize_text_field($answer);
+    $username = sanitize_text_field($user_name);
+    $email = sanitize_email($user_email);
+    $password = wp_hash_password($user_password); // Securely hash the password
+    $table_subs = $wpdb->prefix . 'practice_test_subs'; 
 
-    // Insert into database
-    $wpdb->insert(
-        $table_name,
-        array('question' => $question, 'answer' => $answer),
-        array('%s', '%s')
+    // Prepare the data for insertion
+    $data = array(
+        'user_name' => $username,
+        'user_email' => $email,
+        'user_password' => $password,
+        'user_role' => $user_role,
+        'user_status' => 'active', // Set default values for other fields
+        'tests_taken' => 0,
+        'questions_answered' => 0,
+        'best_subject' => '',
+        'worst_subject' => '',
+        'fast_subject' => '',
+        'slow_subject' => '',
+        'plan' => $plan // Set the plan to Free
     );
+
+    if ($user_action=='add'){
+        // Insert the data into the custom table
+        $wpdb->insert($table_subs, $data);
+
+        // Redirect or display a success message
+        echo 'Registration successful!';
+    }
+
+    
 }
 
 // Function to handle CSV upload
@@ -160,31 +196,6 @@ function practice_tests_handle_users_csv_upload($file) {
         }
         fclose($handle);
     }
-}
-
-global $wpdb;
-
-/**
- * Create Tables for Managing Questions
- */
-function create_questions_table() {
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-
-    $table_name = $wpdb->prefix . 'practice_questions';
-    $charset_collate = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE $table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        question_type varchar(50) NOT NULL,
-        question_content text NOT NULL,
-        answer_options text,
-        correct_answer varchar(255),
-        explanation text,
-        subject_area varchar(100),
-        PRIMARY KEY  (id)
-    ) $charset_collate;";
-
-    dbDelta($sql);
 }
 
 /**
@@ -248,37 +259,6 @@ function delete_question($id) {
     $wpdb->delete($table_name, array('id' => $id));
 }
 
-/**
- * Create Tables for Managing Tests and Users
- */
-function create_tests_users_tables() {
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-
-    // Creating table for Tests
-    $tests_table_name = $wpdb->prefix . 'practice_tests';
-    $tests_sql = "CREATE TABLE $tests_table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        test_name varchar(255) NOT NULL,
-        test_description text,
-        test_type varchar(50) NOT NULL,
-        PRIMARY KEY  (id)
-    ) $charset_collate;";
-
-    // Creating table for Users
-    $users_table_name = $wpdb->prefix . 'practice_users';
-    $users_sql = "CREATE TABLE $users_table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        user_email varchar(100) NOT NULL UNIQUE,
-        user_password varchar(255) NOT NULL,
-        user_role varchar(50) NOT NULL,
-        user_status varchar(50) NOT NULL,
-        registration_date datetime DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY  (id)
-    ) $charset_collate;";
-
-    dbDelta($tests_sql);
-    dbDelta($users_sql);
-}
 
 /**
  * Add a New Test
@@ -333,24 +313,6 @@ function delete_test($id) {
     $table_name = $wpdb->prefix . 'practice_tests';
 
     $wpdb->delete($table_name, array('id' => $id));
-}
-
-/**
- * Add a New Subscriber
- */
-function add_sub($sub_email, $sub_password, $sub_role, $sub_status) {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'practice_subs';
-
-    $wpdb->insert(
-        $table_name,
-        array(
-            'sub_email' => $sub_email,
-            'sub_password' => wp_hash_password($sub_password),
-            'sub_role' => $sub_role,
-            'sub_status' => $sub_status
-        )
-    );
 }
 
 /**

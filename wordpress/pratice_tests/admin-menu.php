@@ -22,19 +22,17 @@ function practice_tests_manage_users_page() {
                 <!-- Single User Addition -->
                 <h3>Add a Single User</h3>
                 <p>
-                    <label for="username">Name:</label>
-                    <input type="text" name="username" id="username">
-                    <label for="useremail">Email:</label>
-                    <input type="text" name="useremail" id="useremail">
+                    <label for="user_name">Name:</label>
+                    <input type="text" name="user_name" id="user_name">
+                    <label for="user_email">Email:</label>
+                    <input type="text" name="user_email" id="user_email">
                 </p>
                 
                 <p>
                     <label for="userstatus">Status:</label>
                     <select name="userstatus" id="userstatus">
-                        <option value="add">Active</option>
-                        <option value="update">Paused</option>
-                        <option value="---">-------</option>
-                        <option value="delete">Delete</option>
+                        <option value="active">Active</option>
+                        <option value="paused">Paused</option>
                     </select>
                     <label for="useraction">Action:</label>
                     <select name="useraction" id="useraction">

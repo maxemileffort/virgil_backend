@@ -10,6 +10,7 @@ include_once plugin_dir_path(__FILE__) . 'admin-menu.php';
 include_once plugin_dir_path(__FILE__) . 'core-functions.php';
 include_once plugin_dir_path(__FILE__) . 'db-functions.php';
 include_once plugin_dir_path(__FILE__) . 'utilities.php';
+include_once plugin_dir_path(__FILE__) . 'client-register-page.php';
 
 // Activation Hook
 register_activation_hook(__FILE__, 'create_plugin_database_tables');
@@ -41,10 +42,13 @@ if (isset($_POST['submit_questions_csv'])) {
 
 if (isset($_POST['submit_single_user'])) {
     // Handle single user addition
-    practice_tests_add_single_user($_POST['username'], 
-                                    $_POST['useremail'], 
-                                    $_POST['useraction'],
-                                    $_POST['userstatus'],);
+    practice_tests_add_single_user($_POST['user_name'], 
+                                    $_POST['user_email'],
+                                    $_POST['user_password'], 
+                                    $_POST['user_action'],
+                                    $_POST['user_status'],
+                                    $_POST['user_role'],
+                                    $_POST['plan']);
 }
 
 if (isset($_POST['submit_users_csv'])) {

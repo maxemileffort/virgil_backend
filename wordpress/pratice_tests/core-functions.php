@@ -3,15 +3,11 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // function practice_test_quiz_shortcode($testtype) {
-function practice_test_quiz_shortcode() {
+function practice_test_quiz_shortcode($atts) {
     global $wpdb; // Access the global WordPress database object
 
-    // // SQL to get quiz data
-    // $sql = "SELECT * FROM wp_practice_test_questions WHERE testtype = 'ACT'"; // Replace with your table name and conditions
-    // $quiz_data = $wpdb->get_results($sql);
-
-     // Define default attributes for the shortcode and parse any passed
-     $atts = shortcode_atts(array(
+    // Define default attributes for the shortcode and parse any passed
+    $atts = shortcode_atts(array(
         'page' => 1, // Current page
         'testtype' => 'ACT', // Default test type, replace with your desired default
         // 'testtype' => $testtype, // Default test type, replace with your desired default
@@ -65,3 +61,4 @@ function practice_test_quiz_shortcode() {
     return $output;
 }
 add_shortcode('practice_test_quiz', 'practice_test_quiz_shortcode');
+
