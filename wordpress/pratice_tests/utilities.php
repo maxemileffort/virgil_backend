@@ -86,3 +86,24 @@ function render_question_bank_table() {
     echo '</form>';
 
 }
+
+
+// Code for checking emails on registration forms
+function check_email_existence() {
+    global $wpdb;
+
+    $email = $_POST['user_email'];
+    // Replace 'your_custom_table' with the actual table name and adjust the query accordingly
+    $query = $wpdb->prepare("SELECT COUNT(*) FROM " . $wpdb->prefix . 'practice_test_subs' . " WHERE user_email = %s", $email);
+    $count = $wpdb->get_var($query);
+
+    if ($count > 0) {
+        echo 'exists';
+    } else {
+        echo 'not_exists';
+    }
+    wp_die();
+}
+
+add_action('wp_ajax_check_email', 'check_email_existence');
+add_action('wp_ajax_nopriv_check_email', 'check_email_existence');

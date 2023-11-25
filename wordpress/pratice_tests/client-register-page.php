@@ -2,6 +2,8 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+include_once plugin_dir_path(__FILE__) . 'practice-tests.php';
+
 function practice_tests_register_new_guardian_user_page() {
     $output = "<form action='#' method='post'>";
     $output .= "<label for='user_name'>Username:</label>";

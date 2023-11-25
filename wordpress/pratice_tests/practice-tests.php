@@ -12,6 +12,8 @@ include_once plugin_dir_path(__FILE__) . 'db-functions.php';
 include_once plugin_dir_path(__FILE__) . 'utilities.php';
 include_once plugin_dir_path(__FILE__) . 'client-register-page.php';
 include_once plugin_dir_path(__FILE__) . 'client-plans-page.php';
+include_once plugin_dir_path(__FILE__) . 'client-login-page.php';
+include_once plugin_dir_path(__FILE__) . 'client-members-page.php';
 
 
 // Activation Hook
@@ -57,3 +59,10 @@ if (isset($_POST['submit_users_csv'])) {
     // Handle user CSV upload
     practice_tests_handle_users_csv_upload($_FILES['users_csv']);
 }
+
+function my_plugin_enqueue_scripts() {
+    wp_enqueue_script('my-plugin-email-validation', plugin_dir_url(__FILE__) . 'email-validation.js', array(), null, true);
+    wp_localize_script('my-plugin-email-validation', 'my_plugin_ajax', array('ajax_url' => admin_url('admin-ajax.php')));
+}
+add_action('wp_enqueue_scripts', 'my_plugin_enqueue_scripts');
+
