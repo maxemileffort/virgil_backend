@@ -11,6 +11,8 @@ include_once plugin_dir_path(__FILE__) . 'core-functions.php';
 include_once plugin_dir_path(__FILE__) . 'db-functions.php';
 include_once plugin_dir_path(__FILE__) . 'utilities.php';
 include_once plugin_dir_path(__FILE__) . 'client-register-page.php';
+include_once plugin_dir_path(__FILE__) . 'client-plans-page.php';
+
 
 // Activation Hook
 register_activation_hook(__FILE__, 'create_plugin_database_tables');
