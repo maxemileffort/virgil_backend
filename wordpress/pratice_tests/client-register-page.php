@@ -22,7 +22,7 @@ function practice_tests_register_new_guardian_user_page() {
     $output .="<input type='hidden' name='user_status' value='active'>";
     $output .="<input type='hidden' name='user_role' value='guardian'>";
 
-    $output .="<input type='submit' name='submit_single_user' value='Register'>";
+    $output .="<input type='submit' id='submit_guardian' name='submit_single_user' value='Register'>";
     $output .="</form> ";
 
     return $output;
@@ -47,7 +47,7 @@ function practice_tests_register_new_student_user_page() {
     $output .="<input type='hidden' name='user_status' value='active'>";
     $output .="<input type='hidden' name='user_role' value='student'>";
 
-    $output .="<input type='submit' name='submit_single_user' value='Register'>";
+    $output .="<input type='submit' id='submit_guardian' name='submit_single_user' value='Register'>";
     $output .="</form> ";
 
     return $output;
