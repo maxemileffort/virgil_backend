@@ -164,6 +164,8 @@ function practice_tests_add_single_user($user_name, $user_email,
 
         // Redirect or display a success message
         echo 'Registration successful!';
+        wp_redirect(home_url('/login-success'));
+        exit;
     }
 
     
