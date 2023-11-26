@@ -1,12 +1,13 @@
 // jQuery(document).ready(function($) {
 //     $('#user_email').blur(function() {
 //         var email = $(this).val();
+//         console.log(email);
 //         $.ajax({
 //             url: my_plugin_ajax.ajax_url,
 //             type: 'POST',
 //             data: {
-//                 action: 'check_email',
-//                 email: email
+//                 'action': 'wp_ajax_check_email',
+//                 'user_email': email
 //             },
 //             success: function(response) {
 //                 if (response === 'exists') {
@@ -54,6 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        xhr.send('action=check_email&email=' + encodeURIComponent(email));
+        xhr.send('action=check_email&user_email=' + encodeURIComponent(email));
     });
 });

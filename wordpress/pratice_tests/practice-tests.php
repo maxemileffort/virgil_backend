@@ -15,7 +15,6 @@ include_once plugin_dir_path(__FILE__) . 'client-plans-page.php';
 include_once plugin_dir_path(__FILE__) . 'client-login-page.php';
 include_once plugin_dir_path(__FILE__) . 'client-members-page.php';
 
-
 // Activation Hook
 register_activation_hook(__FILE__, 'create_plugin_database_tables');
 
@@ -60,9 +59,29 @@ if (isset($_POST['submit_users_csv'])) {
     practice_tests_handle_users_csv_upload($_FILES['users_csv']);
 }
 
-function my_plugin_enqueue_scripts() {
-    wp_enqueue_script('my-plugin-email-validation', plugin_dir_url(__FILE__) . 'email-validation.js', array(), null, true);
-    wp_localize_script('my-plugin-email-validation', 'my_plugin_ajax', array('ajax_url' => admin_url('admin-ajax.php')));
+// Code for checking emails on registration forms
+function enqueue_email_validation_scripts() {
+    wp_enqueue_script('reg-email-validation', plugin_dir_url(__FILE__) .'email-validation.js');
+    wp_localize_script('reg-email-validation', 'my_plugin_ajax', array('ajax_url' => admin_url('admin-ajax.php')));
 }
-add_action('wp_enqueue_scripts', 'my_plugin_enqueue_scripts');
+add_action('wp_enqueue_scripts', 'enqueue_email_validation_scripts');
+
+function check_email_existence() {
+    global $wpdb;
+
+    $email = $_POST['user_email'];
+    // Replace 'your_custom_table' with the actual table name and adjust the query accordingly
+    $query = $wpdb->prepare("SELECT COUNT(*) FROM " . $wpdb->prefix . 'practice_test_subs' . " WHERE user_email = %s", $email);
+    $count = $wpdb->get_var($query);
+
+    if ($count > 0) {
+        echo 'exists';
+    } else {
+        echo 'not_exists';
+    }
+    wp_die();
+}
+
+add_action('wp_ajax_check_email', 'check_email_existence');
+add_action('wp_ajax_nopriv_check_email', 'check_email_existence');
 

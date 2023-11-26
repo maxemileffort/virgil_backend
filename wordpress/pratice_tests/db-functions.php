@@ -155,7 +155,7 @@ function practice_tests_add_single_user($user_name, $user_email,
         'worst_subject' => '',
         'fast_subject' => '',
         'slow_subject' => '',
-        'plan' => $plan // Set the plan to Free
+        'plan' => 'free' // Set the plan to Free
     );
 
     if ($user_action=='add'){
