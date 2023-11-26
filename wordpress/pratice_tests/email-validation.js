@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     var userEmailInput = document.getElementById('user_email');
     var submitButton = document.getElementsByName('submit_single_user')[0];
-    console.log(submitButton);
 
     userEmailInput.addEventListener('blur', function() {
         var email = userEmailInput.value;
@@ -15,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 var emailError = document.querySelector('.email-error');
                 
                 if (response === 'exists') {
-                    console.log(response);
                     if (!emailError) {
                         var errorMessage = document.createElement('p');
                         errorMessage.className = 'email-error';
