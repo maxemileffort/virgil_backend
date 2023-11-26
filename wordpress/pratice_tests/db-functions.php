@@ -198,6 +198,38 @@ function practice_tests_handle_users_csv_upload($file) {
     }
 }
 
+function practice_tests_custom_login($email, $password) {
+    global $wpdb;
+    require_once(ABSPATH . 'wp-includes/pluggable.php');
+
+    $email = sanitize_email($email);
+    $table_subs = $wpdb->prefix . 'practice_test_subs';
+
+    // Query the database for the user
+    $user = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $table_subs WHERE user_email = %s",
+        $email
+    ));
+
+    if ($user) {
+        // Check if the provided password matches the stored hash
+        if (wp_check_password($password, $user->user_password)) {
+            // Password is correct
+            // You can set the user session or cookies here if needed
+            echo 'Login successful!';
+            wp_redirect(home_url('/login-success'));
+            exit;
+        } else {
+            // Password is incorrect
+            echo 'Incorrect password!';
+        }
+    } else {
+        // No user found with that email
+        echo 'No user found with that email!';
+    }
+}
+
+
 /**
  * Add a New Question
  */

@@ -58,6 +58,11 @@ if (isset($_POST['submit_users_csv'])) {
     practice_tests_handle_users_csv_upload($_FILES['users_csv']);
 }
 
+if (isset($_POST['login_user_email']) && isset($_POST['login_user_password'])) {
+    // Handle user CSV upload
+    practice_tests_custom_login($_POST['login_user_email'], $_POST['login_user_password']);
+}
+
 // Code for checking emails on registration forms
 function enqueue_email_validation_scripts() {
     wp_enqueue_script('reg-email-validation', plugin_dir_url(__FILE__) .'email-validation.js');
@@ -83,4 +88,18 @@ function check_email_existence() {
 
 add_action('wp_ajax_check_email', 'check_email_existence');
 add_action('wp_ajax_nopriv_check_email', 'check_email_existence');
+
+function enqueue_custom_scripts() {
+    if (is_page('login-success')) { // Check if it's the login-success page
+        wp_enqueue_script(
+            'custom-redirect', 
+            plugin_dir_url(__FILE__) . 'redirect.js', 
+            array(), 
+            '1.0.0', 
+            true
+        );
+    }
+}
+add_action('wp_enqueue_scripts', 'enqueue_custom_scripts');
+
 
