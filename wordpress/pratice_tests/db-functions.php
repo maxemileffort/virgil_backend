@@ -133,7 +133,7 @@ function practice_tests_handle_csv_upload($file) {
 // Function to add a single user to the database
 function practice_tests_add_single_user($user_name, $user_email,
                                         $user_password, $user_action,
-                                        $user_status,$user_role,$plan) {
+                                        $user_status,$user_role) {
     global $wpdb;
     require_once(ABSPATH . 'wp-includes/pluggable.php');
 

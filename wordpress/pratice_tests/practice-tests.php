@@ -50,8 +50,7 @@ if (isset($_POST['submit_single_user'])) {
                                     $_POST['user_password'], 
                                     $_POST['user_action'],
                                     $_POST['user_status'],
-                                    $_POST['user_role'],
-                                    $_POST['plan']);
+                                    $_POST['user_role'],);
 }
 
 if (isset($_POST['submit_users_csv'])) {
