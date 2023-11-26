@@ -35,7 +35,7 @@ function create_plugin_database_tables() {
         user_email varchar(100) NOT NULL UNIQUE,
         user_password varchar(255) NOT NULL,
         user_role varchar(50) NOT NULL,
-        user_status varchar(50) NOT NULL,
+        user_status text NOT NULL,
         registration_date datetime DEFAULT CURRENT_TIMESTAMP,
         tests_taken int(5) NOT NULL,
         questions_answered int(5) NOT NULL,

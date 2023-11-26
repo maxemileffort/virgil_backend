@@ -52,6 +52,9 @@ function practice_tests_manage_users_page() {
                 </p>
                 <input type="submit" name="submit_users_csv" value="Upload CSV">
             </form>
+            <?php
+            render_users_table(); // inside utilities.php
+            ?>
     </div>
     <?php
 }
