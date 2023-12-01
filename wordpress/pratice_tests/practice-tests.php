@@ -6,6 +6,8 @@ Version: 1.0
 Author: Max Wood
 */
 
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 include_once plugin_dir_path(__FILE__) . 'admin-menu.php';
 include_once plugin_dir_path(__FILE__) . 'core-functions.php';
 include_once plugin_dir_path(__FILE__) . 'db-functions.php';
@@ -17,6 +19,7 @@ include_once plugin_dir_path(__FILE__) . 'client-members-page.php';
 
 // Activation Hook
 register_activation_hook(__FILE__, 'create_plugin_database_tables');
+register_deactivation_hook( __FILE__, 'deactivate' );
 
 // Hook for adding admin menus
 add_action('admin_menu', 'practice_tests_plugin_menu');
@@ -25,17 +28,17 @@ add_action('admin_menu', 'practice_tests_plugin_menu');
 if (isset($_POST['submit_single_question'])) {
     // Handle single question addition
     practice_tests_add_single_question($_POST['testtype'], 
-                                       $_POST['passage'], 
-                                       $_POST['question'], 
-                                       $_POST['answerchoices1'],
-                                       $_POST['answerchoices2'],
-                                       $_POST['answerchoices3'],
-                                       $_POST['answerchoices4'],
-                                       $_POST['answerchoices5'],
-                                       $_POST['answercorrect'],
-                                       $_POST['explanation'],
-                                       $_POST['subjectarea'],
-                                       $_POST['skill'],);
+                                        $_POST['passage'], 
+                                        $_POST['question'], 
+                                        $_POST['answerchoices1'],
+                                        $_POST['answerchoices2'],
+                                        $_POST['answerchoices3'],
+                                        $_POST['answerchoices4'],
+                                        $_POST['answerchoices5'],
+                                        $_POST['answercorrect'],
+                                        $_POST['explanation'],
+                                        $_POST['subjectarea'],
+                                        $_POST['skill'],);
 }
 
 if (isset($_POST['submit_questions_csv'])) {
@@ -101,5 +104,3 @@ function enqueue_custom_scripts() {
     }
 }
 add_action('wp_enqueue_scripts', 'enqueue_custom_scripts');
-
-

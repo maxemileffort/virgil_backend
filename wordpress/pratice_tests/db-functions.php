@@ -6,61 +6,61 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function create_plugin_database_tables() {
     global $wpdb;
 
-    // // Define table names
-    // $table_questions = $wpdb->prefix . 'practice_test_questions';
-    // $table_subs = $wpdb->prefix . 'practice_test_subs';
-    // $table_tests = $wpdb->prefix . 'practice_test_tests';
+    // Define table names
+    $table_questions = $wpdb->prefix . 'practice_test_questions';
+    $table_subs = $wpdb->prefix . 'practice_test_subs';
+    $table_tests = $wpdb->prefix . 'practice_test_tests';
 
-    // // SQL to create your tables
-    // $sql_questions = "CREATE TABLE $table_questions (
-    //     id mediumint(9) NOT NULL AUTO_INCREMENT,
-    //     testtype text not null,
-    //     passage text not null,
-    //     question text NOT NULL,
-    //     answercorrect text NOT NULL,
-    //     answerchoices1 text NOT NULL,
-    //     answerchoices2 text NOT NULL,
-    //     answerchoices3 text NOT NULL,
-    //     answerchoices4 text NOT NULL,
-    //     answerchoices5 text NOT NULL,
-    //     explanation text NOT NULL,
-    //     subjectarea text NOT NULL,
-    //     skill text NOT NULL,
-    //     PRIMARY KEY  (id)
-    // );";
+    // SQL to create your tables
+    $sql_questions = "CREATE TABLE IF NOT EXISTS $table_questions (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        testtype text not null,
+        passage text not null,
+        question text NOT NULL,
+        answercorrect text NOT NULL,
+        answerchoices1 text NOT NULL,
+        answerchoices2 text NOT NULL,
+        answerchoices3 text NOT NULL,
+        answerchoices4 text NOT NULL,
+        answerchoices5 text NOT NULL,
+        explanation text NOT NULL,
+        subjectarea text NOT NULL,
+        skill text NOT NULL,
+        PRIMARY KEY  (id)
+    );";
 
-    // $sql_subs = "CREATE TABLE $table_subs (
-    //     id mediumint(9) NOT NULL AUTO_INCREMENT,
-    //     user_name varchar(50) NOT NULL,
-    //     user_email varchar(100) NOT NULL UNIQUE,
-    //     user_password varchar(255) NOT NULL,
-    //     user_role varchar(50) NOT NULL,
-    //     user_status text NOT NULL,
-    //     registration_date datetime DEFAULT CURRENT_TIMESTAMP,
-    //     tests_taken int(5) NOT NULL,
-    //     questions_answered int(5) NOT NULL,
-    //     best_subject text NOT NULL,
-    //     worst_subject text NOT NULL,
-    //     fast_subject text NOT NULL,
-    //     slow_subject text NOT NULL,
-    //     plan text NOT NULL,
-    //     PRIMARY KEY  (id)
-    // );";
+    $sql_subs = "CREATE TABLE IF NOT EXISTS $table_subs (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        user_name varchar(50) NOT NULL,
+        user_email varchar(100) NOT NULL UNIQUE,
+        user_password varchar(255) NOT NULL,
+        user_role varchar(50) NOT NULL,
+        user_status text NOT NULL,
+        registration_date datetime DEFAULT CURRENT_TIMESTAMP,
+        tests_taken int(5) NOT NULL,
+        questions_answered int(5) NOT NULL,
+        best_subject text NOT NULL,
+        worst_subject text NOT NULL,
+        fast_subject text NOT NULL,
+        slow_subject text NOT NULL,
+        plan text NOT NULL,
+        PRIMARY KEY  (id)
+    );";
 
-    // // Creating table for Tests
-    // $tests_sql = "CREATE TABLE $table_tests (
-    //     id mediumint(9) NOT NULL AUTO_INCREMENT,
-    //     test_name varchar(255) NOT NULL,
-    //     test_description text,
-    //     test_type varchar(50) NOT NULL,
-    //     test_questions JSON default null,
-    //     PRIMARY KEY  (id)
-    // );";
+    // Creating table for Tests
+    $tests_sql = "CREATE TABLE IF NOT EXISTS $table_tests (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        test_name varchar(255) NOT NULL,
+        test_description text,
+        test_type varchar(50) NOT NULL,
+        test_questions JSON default null,
+        PRIMARY KEY  (id)
+    );";
 
-    // require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    // dbDelta($sql_questions);
-    // dbDelta($sql_subs);
-    // dbDelta($tests_sql);
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql_questions);
+    dbDelta($sql_subs);
+    dbDelta($tests_sql);
 }
 
 // Function to add a single question to the database
@@ -386,4 +386,21 @@ function delete_sub($id) {
     $table_name = $wpdb->prefix . 'practice_subs';
 
     $wpdb->delete($table_name, array('id' => $id));
+}
+
+function deactivate(){
+    // Access the global variable
+    global $wpdb;
+
+    // Define the table names
+    $table_act = $wpdb->prefix . 'practice_test_questions';
+    $table_subs = $wpdb->prefix . 'practice_test_subs';
+
+    // SQL to drop tables
+    $sql_questions = "DROP TABLE IF EXISTS $table_questions;";
+    $sql_subs = "DROP TABLE IF EXISTS $table_subs;";
+
+    // // Execute the SQL
+    // $wpdb->query($sql_questions);
+    // $wpdb->query($$sql_subs);
 }
