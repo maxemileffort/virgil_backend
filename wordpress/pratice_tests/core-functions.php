@@ -3,7 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // function practice_test_quiz_shortcode($testtype) {
-function practice_test_quiz_shortcode() {
+function practice_test_quiz_shortcode($atts) {
     global $wpdb; // Access the global WordPress database object
 
     // Define default attributes for the shortcode and parse any passed
