@@ -13,6 +13,7 @@ function create_plugin_database_tables() {
     $table_test_questions = $wpdb->prefix . 'practice_test_test_questions'; // Links tests to questions (structure)
     $table_test_attempts = $wpdb->prefix . 'practice_test_test_attempts'; // Tracks user attempts at tests
     $table_test_resp = $wpdb->prefix . 'practice_test_test_resp'; // Stores user responses for each question in an attempt
+    $table_guardian_student_links = $wpdb->prefix . 'practice_test_guardian_student_links'; // Links guardians to students
 
     $charset_collate = $wpdb->get_charset_collate();
 
@@ -119,6 +120,24 @@ function create_plugin_database_tables() {
     dbDelta($sql_test_questions);
     dbDelta($sql_test_attempts);
     dbDelta($sql_test_resp);
+
+    // SQL to create Guardian-Student Links table
+    $sql_guardian_student_links = "CREATE TABLE IF NOT EXISTS $table_guardian_student_links (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        guardian_user_id mediumint(9) NOT NULL,
+        student_user_id mediumint(9) NOT NULL,
+        link_status varchar(50) NOT NULL DEFAULT 'active', -- e.g., 'active', 'pending', 'inactive'
+        date_linked datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        PRIMARY KEY  (id),
+        UNIQUE KEY unique_link (guardian_user_id, student_user_id), -- Prevent duplicate links
+        KEY guardian_user_id (guardian_user_id),
+        KEY student_user_id (student_user_id)
+        -- Consider adding FOREIGN KEY constraints
+        -- FOREIGN KEY (guardian_user_id) REFERENCES $table_subs(id) ON DELETE CASCADE,
+        -- FOREIGN KEY (student_user_id) REFERENCES $table_subs(id) ON DELETE CASCADE
+    ) $charset_collate;";
+    dbDelta($sql_guardian_student_links);
+
 }
 
 // Function to add a single question to the database

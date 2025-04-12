@@ -2,7 +2,10 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-include_once plugin_dir_path(__FILE__) . 'utilities.php';
+// Note: List Table classes are included within the functions that use them below.
+// We might not need utilities.php anymore if the old render functions are removed
+// include_once plugin_dir_path(__FILE__) . 'utilities.php';
+
 
 function practice_tests_plugin_menu() {
     add_menu_page('Practice Tests Settings', 'Practice Tests', 'manage_options', 'practice-tests-plugin', 'practice_tests_dashboard_page');
@@ -215,10 +218,21 @@ function practice_tests_manage_users_page() {
                     <input type="file" name="users_csv" id="users_csv">
                 </p>
                 <input type="submit" name="submit_users_csv" value="Upload CSV">
+            </form> <?php // Keep the forms for adding single/CSV for now ?>
+
+            <hr> <?php // Separator ?>
+            <h2>Existing Users</h2>
+            <form method="post"> <?php // Form needed for bulk actions and search box ?>
+                <input type="hidden" name="page" value="<?php echo esc_attr($_REQUEST['page']); ?>" />
+                <?php
+                // Include the class file only when needed
+                require_once plugin_dir_path(__FILE__) . 'includes/admin/class-users-list-table.php';
+                $users_list_table = new Practice_Test_Users_List_Table();
+                $users_list_table->prepare_items();
+                $users_list_table->search_box('Search Users', 'user_search_input');
+                $users_list_table->display();
+                ?>
             </form>
-            <?php
-            render_users_table(); // inside utilities.php
-            ?>
     </div>
     <?php
 }
@@ -287,10 +301,19 @@ function practice_tests_view_edit_question_page() {
     ?>
     <div class="wrap">
         <h2>View / Edit Questions</h2>
-        <p>This page will have a dropdown to select tables with questions. The table will render and the questions, answers, correct answer, and explanations will all be editable.</p>
-        <?php
-            render_question_bank_table(); // inside utilities.php
-        ?>
+        <?php // Removed the paragraph about dropdowns/editing for now ?>
+
+        <form method="post"> <?php // Form needed for bulk actions and search box ?>
+             <input type="hidden" name="page" value="<?php echo esc_attr($_REQUEST['page']); ?>" />
+            <?php
+            // Include the class file only when needed
+            require_once plugin_dir_path(__FILE__) . 'includes/admin/class-questions-list-table.php';
+            $questions_list_table = new Practice_Test_Questions_List_Table();
+            $questions_list_table->prepare_items();
+            $questions_list_table->search_box('Search Questions', 'question_search_input');
+            $questions_list_table->display();
+            ?>
+        </form>
     </div>
     <?php
 }

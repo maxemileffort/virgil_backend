@@ -2,126 +2,88 @@
 
 ## Overview
 
-This WordPress plugin provides a system for creating, managing, and delivering practice tests, specifically designed for ACT and SAT preparation, within a WordPress website. It allows administrators to manage a question bank and user accounts (differentiating between "Guardian" and "Student" roles), while registered users can log in to take tests and potentially view results (though result display is not fully implemented).
+This WordPress plugin provides a system for creating, managing, and delivering practice tests, specifically designed for ACT and SAT preparation, within a WordPress website. It allows administrators to manage a question bank, define tests, and manage user accounts (differentiating between "Guardian" and "Student" roles). Registered users can log in, take tests, view their results (including basic performance breakdowns), and guardians can link to and view their students' performance.
 
 ## Core Purpose
 
-The primary goal of this plugin is to establish an online platform where students can take practice ACT and SAT tests. It aims to provide tools for administrators to easily manage test content and user access, and for users to register, log in, and interact with the tests.
+The primary goal of this plugin is to establish an online platform where students can take practice ACT and SAT tests, receive feedback on their performance by category, and allow guardians to monitor progress. It aims to provide tools for administrators to easily manage test content and user access.
 
-## Key Functionalities
+## Key Functionalities (Current State)
 
-### 1. Database Structure & Management (`db-functions.php`)
+### 1. Database Structure (`db-functions.php`)
 
-*   **Custom Tables:** Creates four essential tables upon activation:
+*   **Relational Schema:** Uses custom tables with a relational structure:
     *   `wp_practice_test_questions`: Stores individual questions (type, passage, text, choices, correct answer, explanation, subject, skill).
-    *   `wp_practice_test_subs`: Stores user data (name, email, hashed password, role, status, registration date, plan, basic performance stats like `tests_taken`, `questions_answered`, etc.).
-    *   `wp_practice_test_tests`: Designed to define specific tests by linking up to 50 question IDs.
-    *   `wp_practice_test_test_resp`: Intended to store individual user responses for each question within a test.
-*   **Data Handling:** Includes functions for adding questions/users individually or via CSV upload (Note: User CSV upload function seems to target the wrong table). Handles password hashing (`wp_hash_password`) and login verification (`wp_check_password`).
-*   **CRUD Operations:** Provides basic functions for creating, reading, updating, and deleting questions, tests, and users (subscribers).
+    *   `wp_practice_test_subs`: Stores user data (name, email, hashed password, role, status, registration date, plan, aggregate performance stats).
+    *   `wp_practice_test_tests`: Stores test metadata (name, description, type).
+    *   `wp_practice_test_test_questions`: Links tests to specific questions with ordering.
+    *   `wp_practice_test_test_attempts`: Tracks individual user attempts at tests (status, start/end times, score).
+    *   `wp_practice_test_test_resp`: Stores user answers for each question within an attempt (answer given, correctness).
+    *   `wp_practice_test_guardian_student_links`: Links guardian users to student users.
+*   **Activation:** Creates/updates these tables using `dbDelta` on plugin activation.
+*   **Uninstallation:** Drops all custom tables on plugin uninstall (`uninstall.php`).
+*   **Data Handling:** Includes functions for adding questions/users (single & CSV), password hashing, custom login verification.
 
-### 2. Admin Interface (`admin-menu.php`, `utilities.php`)
+### 2. Admin Interface (`admin-menu.php`, `includes/admin/`)
 
-*   **WP Admin Menu:** Adds a "Practice Tests" top-level menu.
+*   **WP Admin Menu:** Adds a "Practice Tests" menu.
 *   **Sub-Pages:**
-    *   **Dashboard:** Placeholder for future analytics.
+    *   **Dashboard:** Placeholder.
     *   **Add Question:** Form for single question entry and CSV upload.
-    *   **View/Edit Question:** Displays the question bank using `render_question_bank_table()` (from `utilities.php`) with filtering and pagination. Editing is intended but not fully implemented.
-    *   **Manage Users:** Form for single user management (add/update/reset/delete) and CSV upload. Displays user list using `render_users_table()` (from `utilities.php`) with filtering and pagination, showing user details and performance stats.
+    *   **View/Edit Question:** Displays questions using `WP_List_Table` with sorting, searching, pagination, and bulk delete actions. (Edit action link present but not implemented).
+    *   **Define Test:** UI to create new tests by selecting questions from the bank.
+    *   **Manage Users:** Displays users using `WP_List_Table` with sorting, searching, pagination, and bulk delete actions. Includes forms for adding single users or via CSV. (Edit action link present but not implemented).
 
-### 3. Frontend User Experience (`core-functions.php`, `client-*.php`, JS files)
+### 3. Frontend User Experience (`core-functions.php`, `client-*.php`, `js/`)
 
-*   **Shortcodes:** The primary way to display plugin content on the site:
-    *   `[practice_test_quiz testtype="ACT/SAT"]`: Displays a paginated quiz with questions and radio button answers. Includes navigation/action buttons.
+*   **Shortcodes:**
+    *   `[practice_test_quiz test_id="X"]`: Displays a specific test (fetched by ID), paginated one question per page. Handles test attempts (start/resume). Uses AJAX (`js/quiz-handler.js`) to save answers on change, pause (save & exit), and submit the test.
     *   `[practice_test_reg_guardian]`: Registration form for Guardian users.
     *   `[practice_test_reg_student]`: Registration form for Student users.
     *   `[practice_tests_login]`: Login form.
-    *   `[practice_tests_members]`: Renders the main dashboard for logged-in users.
-    *   `[practice_tests_plan]`: Placeholder for displaying user subscription plans.
-*   **User Roles:** Differentiates between 'guardian' and 'student' roles during registration and potentially in the members' area ("Add Student" link visible).
-*   **Members Area:** Provides a dashboard structure with sidebar and top navigation (Take Test, See Results, Upgrade, Add Student, Profile, Sign Out). Content areas are mostly placeholders, suggesting dynamic loading via JavaScript is intended.
-*   **Client-Side Validation:** `email-validation.js` uses AJAX to check if an email exists during registration, providing immediate feedback and disabling submit if necessary.
-*   **Login Redirect:** `redirect.js` automatically redirects users from a `/login-success` page to the `/members` area after a 3-second delay.
+    *   `[practice_tests_members]`: Renders the dynamic members' area dashboard. Uses AJAX (`js/members-handler.js`) to load content sections (Available Tests, Performance Breakdown, Results History, Add Student) without page reloads.
+    *   `[practice_tests_plan]`: Placeholder.
+    *   `[practice_test_results]`: Displays results for a completed attempt (specified by URL param `?attempt=X`). Shows overall score and question-by-question review including subject/skill, user answer, correct answer, and explanation.
+    *   `[practice_test_performance_breakdown]`: Displays the logged-in user's overall performance accuracy broken down by subject and skill across all completed tests.
+*   **User Roles:** Differentiates between 'guardian' and 'student'.
+*   **Guardian Features:** Can link student accounts via email and view linked students' performance breakdowns within the members' area.
+*   **Client-Side Validation:** `email-validation.js` uses AJAX for real-time email existence check during registration.
+*   **Login Redirect:** `redirect.js` redirects from `/login-success` to `/members` after a delay.
 
-### 4. Plugin Lifecycle (`practice-tests.php`, `uninstall.php`)
+### 4. Plugin Lifecycle & Loading (`practice-tests.php`)
 
-*   **Activation:** Creates the necessary database tables.
-*   **Deactivation:** Currently does not perform specific cleanup (table dropping is commented out in `db-functions.php`).
-*   **Uninstallation:** Attempts to drop the `questions` and `subs` tables (contains a potential typo `$$sql_subs` and omits dropping the `tests` and `test_resp` tables).
+*   **Loading:** Uses `plugins_loaded` hook to initialize most components, ensuring dependencies are met. Admin-specific code is loaded conditionally using `is_admin()`.
+*   **Activation/Deactivation:** Hooks registered correctly.
+*   **AJAX:** Multiple AJAX actions defined for frontend interactions (quiz handling, members area loading, email check, student linking).
 
-## Key User Flows
+## Recent Development Summary (Phase 1 & 4 + Debugging)
 
-1.  **Admin - Question Management:** Admin navigates to "Practice Tests" -> "Add Question" to add questions individually or upload a CSV. They can view questions via "View/Edit Question".
-2.  **Admin - User Management:** Admin navigates to "Practice Tests" -> "Manage Users" to add/manage users individually or upload a CSV. They can view the user list and basic stats.
-3.  **User - Registration:** A visitor navigates to a page with `[practice_test_reg_guardian]` or `[practice_test_reg_student]`, fills the form. Email is validated via AJAX. On submission, user data is saved to `wp_practice_test_subs`.
-4.  **User - Login:** A user navigates to a page with `[practice_tests_login]`, enters credentials. `practice_tests_custom_login` verifies against the database. On success, redirects to `/login-success`, then automatically to `/members`.
-5.  **User - Taking a Test (Inferred):** A logged-in user in the `/members` area likely clicks "Take Test" or selects a test from the display area. This loads a page/view containing the `[practice_test_quiz]` shortcode. The user answers questions page by page, potentially using "Save and Exit" or "Save and Submit". (The exact mechanism for saving/submitting is not detailed in the PHP).
-6.  **User - Viewing Results (Inferred):** A user might click "See Results" in the members' area, which would query the `wp_practice_test_test_resp` table (logic not shown) to display performance.
-
-## Potential Issues & Areas for Development
-
-*   **User CSV Upload:** The `practice_tests_handle_users_csv_upload` function in `db-functions.php` incorrectly targets the questions table.
-*   **Uninstall Script:** Contains a typo (`$$sql_subs`) and doesn't remove all created tables (`tests`, `test_resp`).
-*   **Incomplete Features:** User plans (`[practice_tests_plan]`), detailed analytics, test result processing/display, admin editing of questions, and dynamic content loading in the members' area appear incomplete or are placeholders.
-*   **Test Definition:** While a `wp_practice_test_tests` table exists, the admin interface lacks a dedicated section to create/manage these defined tests (linking questions together).
-*   **Security:** While basic sanitization and password hashing are used, a full security audit would be recommended, especially regarding user input handling and capabilities checks (`manage_options` is used, which is appropriate for admin functions).
-*   **Error Handling:** Robust error handling for database operations and file uploads could be improved.
-
-This README provides a snapshot of the plugin's structure and capabilities based on the provided source code.
-
----
-
-## Recent Development (Phase 1 Implementation)
-
-Significant progress has been made on the core test platform functionality outlined in Phase 1 of the TODO list:
-
-*   **Database Refactoring:** The database schema in `db-functions.php` was updated to use a relational structure. The inflexible fixed-column tables for tests and responses were replaced with:
-    *   `wp_practice_test_tests`: Stores test metadata.
-    *   `wp_practice_test_test_questions`: Links tests to questions with ordering.
-    *   `wp_practice_test_test_attempts`: Tracks individual user attempts.
-    *   `wp_practice_test_test_resp`: Stores user answers per question within an attempt.
-*   **Test Definition UI:** A new "Define Test" admin page was added (`admin-menu.php`), allowing administrators to create tests by selecting questions from the bank.
-*   **Test Taking Flow:**
-    *   The `[practice_test_quiz]` shortcode (`core-functions.php`) was rewritten to load questions based on a specified `test_id`, create/resume test attempts, handle pagination for the specific test, and load saved answers.
-    *   AJAX handlers were added (`core-functions.php`) to save answers (`save_practice_test_answer`), pause tests (`pause_practice_test`), and submit tests (`submit_practice_test`).
-    *   A new `js/quiz-handler.js` file was created to manage frontend AJAX interactions during the quiz.
-*   **Grading:** A basic grading function (`practice_test_grade_attempt` in `core-functions.php`) was implemented. It's triggered on submission, calculates the overall score, marks answers in the database, and updates basic user stats (`tests_taken`, `questions_answered`).
-*   **Results Display:** A new `[practice_test_results]` shortcode (`core-functions.php`) was added to display basic results (overall score, question breakdown with user/correct answers, explanations) for a completed attempt based on a URL parameter.
-*   **Bug Fixes:**
-    *   The user CSV upload function (`practice_tests_handle_users_csv_upload` in `db-functions.php`) was corrected to target the user table and includes basic validation.
-    *   The `uninstall.php` script was corrected to properly remove all plugin-specific database tables.
-
-These changes establish a more robust and scalable foundation for the test platform.
+*   **Core Platform (Phase 1):** Refactored database to relational model, added Test Definition UI, implemented test taking flow with AJAX, added basic grading and results display, fixed CSV upload and uninstall bugs.
+*   **UX/UI & Features (Phase 4):** Implemented detailed performance breakdown (by subject/skill), made members area dynamic with AJAX loading, improved admin tables using `WP_List_Table`, enhanced results page with subject/skill info, implemented guardian-student linking and performance viewing.
+*   **Debugging:** Resolved activation fatal errors related to file includes and parse errors.
 
 ---
 
 ## Evaluation for Monetization & AI Goal (Ruthless)
 
-The current plugin is a **very basic foundation** and **far from the goal** of a top-notch, monetizable, AI-powered test prep platform.
+The current plugin provides a **functional foundation** but still requires significant work to meet the commercial goals:
 
-*   **AI Integration (USP):** **Non-Existent.** Relies solely on manual input, failing the core USP.
-*   **Monetization Readiness:** **Extremely Poor.** Basic `plan` field exists, but no plan management, access control, or payment integration. Cannot be monetized.
-*   **Core Functionality:** **Incomplete.** Test submission, grading, results, and feedback loop is missing or unclear. Admin UI for defining tests from the question bank is absent.
-*   **User Experience (UX/UI):** **Rudimentary.** Frontend members' area uses static placeholders. Admin UI is basic forms/tables. Lacks polish and dynamic interaction.
-*   **Database Design & Scalability:** **Poor.** Fixed-column structure for tests/responses is inflexible and inefficient. Requires a relational redesign.
-*   **Code Quality & Maintainability:** **Mediocre.** Contains known bugs, lacks robust error handling, and has incomplete features. Will be difficult to maintain/extend without refactoring.
-*   **Performance Tracking by Category:** **Non-Existent.** Although the database stores question categories (subject/skill) and has fields for summary stats (best/worst subject), there's no logic to calculate these stats or display performance breakdowns to users, failing a key requirement for targeted study guidance.
-*   **Security:** Basic measures are present, but insufficient for a commercial product handling user data and payments.
+*   **AI Integration (USP):** **Non-Existent.** Core value proposition is missing.
+*   **Monetization Readiness:** **Very Low.** Lacks plan definition, access control, and payment gateway integration.
+*   **Core Functionality:** **Improved but Basic.** Test taking works, but lacks features like timers, advanced review options. Performance stats are basic (accuracy only).
+*   **User Experience (UX/UI):** **Functional but Unpolished.** AJAX loading helps, but styling is minimal. Admin tables are standard but lack inline editing.
+*   **Code Quality & Maintainability:** **Improved.** Refactoring helped, but needs further cleanup, error handling, and potentially object-oriented structure for core logic.
+*   **Performance Tracking by Category:** **Basic Implementation.** Accuracy is calculated and displayed, but lacks depth (e.g., timing, historical trends, identifying specific weak questions within a skill). User aggregate stats (`best_subject` etc.) are not yet calculated.
+*   **Security:** Requires a dedicated audit before commercial release.
 
-**Conclusion:** Requires substantial development across all areas – core functionality, AI integration, monetization features, UX/UI, code quality, database design, and **especially performance analytics** – to meet the stated goal.
+**Conclusion:** The plugin is now a much better base, but significant development remains for AI features, monetization, advanced analytics, UI polish, and hardening.
 
 ---
 
 ## TODO List Towards Monetizable AI Platform
 
-**[x](Phase 1: Core Test Platform Functionality)**
-
-1.  **Refactor Database Schema:** Redesign `tests` and `responses` tables for relational structure. Update all DB functions.
-2.  **Implement Test Definition UI:** Admin interface to create tests by selecting questions.
-3.  **Implement Full Test Taking Flow:** Robust JS/AJAX for answer submission, saving progress, grading triggers.
-4.  **Implement Grading & Performance Analysis:** Backend grading logic, calculate overall scores AND performance stats per `subjectarea`/`skill`. Update aggregate stats in `wp_practice_test_subs`.
-5.  **Implement Basic Results Display:** Show overall score and correct/incorrect answers in members' area.
-6.  **Fix Existing Bugs:** Correct user CSV upload and uninstall script issues.
+**[✓] Phase 1: Core Test Platform Functionality (Complete)**
+*Items 1-6 implemented.*
 
 **(Phase 2: AI Integration - The USP)**
 
@@ -132,13 +94,13 @@ The current plugin is a **very basic foundation** and **far from the goal** of a
 8.  **Implement Plans & Access Control:** Admin UI for plan definition (Free/Premium, limits). Enforce access control based on user plan. Implement upgrade flow. Make `[practice_tests_plan]` functional.
 9.  **Integrate Payment Gateway:** Integrate with Stripe/PayPal etc. for subscription handling.
 
-**(Phase 4: UX/UI & Advanced Features)**
+**[→] Phase 4: UX/UI & Advanced Features (Partially Complete)**
 
-10. **Implement Detailed Performance Display:** Create views in the members' area to show users their performance breakdown by `subjectarea` and `skill` (accuracy, timing if implemented).
-11. **Enhance Members Area:** Dynamic content loading (AJAX), professional styling.
-12. **Improve Admin Interface:** Better sorting/searching/filtering, inline editing.
-13. **Develop Advanced Feedback:** Insightful feedback beyond correct/incorrect (e.g., link to resources based on weak skills).
-14. **Guardian/Student Linking:** Allow guardians to view linked student progress and detailed performance breakdowns.
+10. **[✓] Implement Detailed Performance Display:** Created views/shortcode for user's own breakdown by subject/skill; integrated into members area via AJAX.
+11. **[✓] Enhance Members Area:** Implemented dynamic content loading via AJAX. (Styling pending).
+12. **[✓] Improve Admin Interface:** Implemented `WP_List_Table` for questions/users. (Inline editing pending).
+13. **[✓] Develop Advanced Feedback:** Added Subject/Skill to results page. (Linking resources pending).
+14. **[✓] Guardian/Student Linking:** Implemented linking and viewing student performance. (Unlinking, deeper integration pending).
 
 **(Phase 5: Quality & Polish)**
 

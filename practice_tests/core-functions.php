@@ -17,6 +17,10 @@ function enqueue_quiz_handler_scripts() {
         // We will add attempt_id dynamically within the shortcode output if needed,
         // or potentially pass it here if we can determine it before enqueueing.
     ));
+
+    // Register the members area handler script (will be enqueued specifically in the shortcode)
+     wp_register_script('practice-test-members-handler', plugin_dir_url(__FILE__) . 'js/members-handler.js', array('jquery'), '1.0.0', true);
+
 }
 add_action('wp_enqueue_scripts', 'enqueue_quiz_handler_scripts');
 
@@ -606,6 +610,7 @@ function practice_test_results_shortcode($atts) {
         }
 
         $output .= '<p><strong>Question:</strong> ' . esc_html($result->question) . '</p>';
+        $output .= '<p><small><em>Subject: ' . esc_html($result->subjectarea) . ' | Skill: ' . esc_html($result->skill) . '</em></small></p>'; // Added Subject/Skill display
 
         // Display Choices, highlighting user answer and correct answer
         $output .= '<div class="result-choices" style="margin-left: 15px;">';
@@ -659,3 +664,529 @@ function practice_test_results_shortcode($atts) {
     return $output;
 }
 add_shortcode('practice_test_results', 'practice_test_results_shortcode');
+
+
+// --- Performance Breakdown Functionality ---
+
+/**
+ * Calculates performance statistics (accuracy) grouped by subject and skill for a given user.
+ *
+ * @param int $user_id The ID of the user.
+ * @return array An array containing two elements: 'subjects' and 'skills',
+ *               each being an associative array mapping category name to
+ *               ['correct' => count, 'total' => count, 'accuracy' => percentage].
+ *               Returns empty array if no completed attempts or data found.
+ */
+function practice_test_get_user_performance_breakdown($user_id) {
+    global $wpdb;
+    $user_id = intval($user_id);
+    if ($user_id <= 0) {
+        return ['subjects' => [], 'skills' => []];
+    }
+
+    // Table names
+    $table_attempts = $wpdb->prefix . 'practice_test_test_attempts';
+    $table_responses = $wpdb->prefix . 'practice_test_test_resp';
+    $table_questions = $wpdb->prefix . 'practice_test_questions';
+
+    // 1. Get all completed attempt IDs for the user
+    $completed_attempt_ids = $wpdb->get_col($wpdb->prepare(
+        "SELECT id FROM $table_attempts WHERE user_id = %d AND attempt_status = 'completed'",
+        $user_id
+    ));
+
+    if (empty($completed_attempt_ids)) {
+        return ['subjects' => [], 'skills' => []]; // No completed tests
+    }
+
+    // 2. Get all responses for these attempts, joined with question data
+    $ids_placeholder = implode(',', array_fill(0, count($completed_attempt_ids), '%d'));
+    $performance_data = $wpdb->get_results($wpdb->prepare(
+        "SELECT
+            r.is_correct,
+            q.subjectarea,
+            q.skill
+         FROM $table_responses r
+         JOIN $table_questions q ON r.question_id = q.id
+         WHERE r.attempt_id IN ($ids_placeholder) AND r.is_correct IS NOT NULL", // Only consider graded questions
+        $completed_attempt_ids
+    ));
+
+    if (empty($performance_data)) {
+        return ['subjects' => [], 'skills' => []]; // No graded responses found
+    }
+
+    // 3. Aggregate statistics
+    $subject_stats = [];
+    $skill_stats = [];
+
+    foreach ($performance_data as $data) {
+        $subject = trim($data->subjectarea);
+        $skill = trim($data->skill);
+        $is_correct = intval($data->is_correct);
+
+        // Aggregate by Subject
+        if (!empty($subject)) {
+            if (!isset($subject_stats[$subject])) $subject_stats[$subject] = ['correct' => 0, 'total' => 0];
+            $subject_stats[$subject]['total']++;
+            if ($is_correct) {
+                $subject_stats[$subject]['correct']++;
+            }
+        }
+
+        // Aggregate by Skill
+        if (!empty($skill)) {
+             if (!isset($skill_stats[$skill])) $skill_stats[$skill] = ['correct' => 0, 'total' => 0];
+            $skill_stats[$skill]['total']++;
+            if ($is_correct) {
+                $skill_stats[$skill]['correct']++;
+            }
+        }
+    }
+
+    // 4. Calculate Accuracy
+    foreach ($subject_stats as $subject => &$stats) {
+        $stats['accuracy'] = ($stats['total'] > 0) ? round(($stats['correct'] / $stats['total']) * 100, 1) : 0;
+    }
+    unset($stats); // Unset reference
+
+    foreach ($skill_stats as $skill => &$stats) {
+        $stats['accuracy'] = ($stats['total'] > 0) ? round(($stats['correct'] / $stats['total']) * 100, 1) : 0;
+    }
+    unset($stats); // Unset reference
+
+
+    // Sort by accuracy (descending) or name (ascending) - Optional
+     uasort($subject_stats, function($a, $b) { return $b['accuracy'] <=> $a['accuracy']; }); // Sort subjects by accuracy desc
+     uasort($skill_stats, function($a, $b) { return $b['accuracy'] <=> $a['accuracy']; });   // Sort skills by accuracy desc
+
+
+    return ['subjects' => $subject_stats, 'skills' => $skill_stats];
+}
+
+
+/**
+ * Shortcode to display the user's performance breakdown by subject and skill.
+ *
+ * @param array $atts Shortcode attributes (unused).
+ * @return string HTML output.
+ */
+function practice_test_performance_breakdown_shortcode($atts) {
+     if (!is_user_logged_in()) {
+        return '<p>Please log in to view your performance breakdown.</p>';
+    }
+    $user_id = get_current_user_id();
+
+    $performance = practice_test_get_user_performance_breakdown($user_id);
+
+    $output = '<div class="practice-test-performance-breakdown">';
+    $output .= '<h3>Performance Breakdown</h3>';
+
+    // Display Subject Stats
+    $output .= '<h4>By Subject Area</h4>';
+    if (empty($performance['subjects'])) {
+        $output .= '<p>No performance data available by subject yet.</p>';
+    } else {
+        $output .= '<table class="wp-list-table widefat striped practice-test-performance-table">';
+        $output .= '<thead><tr><th>Subject</th><th>Correct</th><th>Attempted</th><th>Accuracy</th></tr></thead>';
+        $output .= '<tbody>';
+        foreach ($performance['subjects'] as $subject => $stats) {
+            $output .= '<tr>';
+            $output .= '<td>' . esc_html($subject) . '</td>';
+            $output .= '<td>' . esc_html($stats['correct']) . '</td>';
+            $output .= '<td>' . esc_html($stats['total']) . '</td>';
+            $output .= '<td>' . esc_html($stats['accuracy']) . '%</td>';
+            $output .= '</tr>';
+        }
+        $output .= '</tbody></table>';
+    }
+
+     // Display Skill Stats
+    $output .= '<h4 style="margin-top: 20px;">By Skill</h4>';
+    if (empty($performance['skills'])) {
+        $output .= '<p>No performance data available by skill yet.</p>';
+    } else {
+        $output .= '<table class="wp-list-table widefat striped practice-test-performance-table">';
+        $output .= '<thead><tr><th>Skill</th><th>Correct</th><th>Attempted</th><th>Accuracy</th></tr></thead>';
+        $output .= '<tbody>';
+        foreach ($performance['skills'] as $skill => $stats) {
+            $output .= '<tr>';
+            $output .= '<td>' . esc_html($skill) . '</td>';
+            $output .= '<td>' . esc_html($stats['correct']) . '</td>';
+            $output .= '<td>' . esc_html($stats['total']) . '</td>';
+            $output .= '<td>' . esc_html($stats['accuracy']) . '%</td>';
+            $output .= '</tr>';
+        }
+        $output .= '</tbody></table>';
+    }
+
+    $output .= '</div>'; // Close container
+
+    return $output;
+}
+add_shortcode('practice_test_performance_breakdown', 'practice_test_performance_breakdown_shortcode');
+
+
+// --- AJAX Handler for Loading Member Area Content ---
+
+/**
+ * Central AJAX handler for loading different content sections in the members area.
+ */
+function practice_test_load_member_content_callback() {
+    // 1. Security Checks
+    check_ajax_referer('practice_test_members_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'User not logged in.'], 403);
+    }
+    $user_id = get_current_user_id();
+
+    // 2. Get Requested Action
+    $sub_action = isset($_POST['sub_action']) ? sanitize_key($_POST['sub_action']) : '';
+
+    // 3. Route to appropriate content generation function
+    $html_content = '';
+    switch ($sub_action) {
+        case 'view_tests':
+            $html_content = practice_test_render_available_tests($user_id);
+            break;
+        case 'view_performance':
+            // Reuse the shortcode function's logic, but just get the data array
+            $performance = practice_test_get_user_performance_breakdown($user_id);
+            $html_content = practice_test_render_performance_html($performance); // New rendering function
+            break;
+        case 'view_results_history':
+             $html_content = practice_test_render_results_history($user_id);
+             break;
+        // Add cases for other actions (profile, learning, upgrade, add_student) later
+        case 'view_profile':
+             $html_content = '<p>Profile management functionality coming soon.</p>';
+             break;
+        case 'view_learning':
+             $html_content = '<p>Learning resources functionality coming soon.</p>';
+             break;
+        case 'view_upgrade':
+             $html_content = '<p>Upgrade options functionality coming soon.</p>';
+             // Potentially render the [practice_tests_plan] shortcode content here
+             // $html_content = do_shortcode('[practice_tests_plan]');
+             break;
+         case 'add_student':
+             // Check if current user is a guardian (add proper capability check later)
+             $user_info = get_userdata($user_id);
+             $user_roles = (array) $user_info->roles;
+             if (in_array('guardian', $user_roles)) { // Simple role check for now
+                 $html_content = practice_test_render_add_student_form($user_id);
+             } else {
+                 $html_content = '<p>This feature is only available for guardian accounts.</p>';
+             }
+             break;
+        default:
+            $html_content = '<p>Invalid request or content not available.</p>';
+            break;
+    }
+
+    wp_send_json_success(['html' => $html_content]);
+}
+add_action('wp_ajax_load_member_content', 'practice_test_load_member_content_callback');
+
+
+// --- Helper Functions for Rendering Member Area Content ---
+
+/**
+ * Renders HTML for the list of available tests.
+ */
+function practice_test_render_available_tests($user_id) {
+    global $wpdb;
+    $table_tests = $wpdb->prefix . 'practice_test_tests';
+    // TODO: Add filtering based on user plan/access later
+    $available_tests = $wpdb->get_results("SELECT id, test_name, test_description, test_type FROM $table_tests ORDER BY test_name ASC");
+
+    if (empty($available_tests)) {
+        return '<p>No practice tests are currently available.</p>';
+    }
+
+    $output = '<h3>Available Tests</h3>';
+    $output .= '<ul>';
+    foreach ($available_tests as $test) {
+        // Assume a page slug 'take-quiz' where the quiz shortcode is placed
+        $quiz_page_url = home_url('/take-quiz/'); // Adjust this slug if needed
+        $start_test_url = add_query_arg('test_id', $test->id, $quiz_page_url);
+
+        $output .= '<li>';
+        $output .= '<strong>' . esc_html($test->test_name) . '</strong> (' . esc_html($test->test_type) . ')';
+        if (!empty($test->test_description)) {
+            $output .= '<br><small>' . esc_html($test->test_description) . '</small>';
+        }
+        $output .= '<br><a href="' . esc_url($start_test_url) . '" class="button button-primary">Start Test</a>';
+        $output .= '</li><hr>';
+    }
+    $output .= '</ul>';
+
+    return $output;
+}
+
+
+/**
+ * Renders the form for guardians to add/link a student account.
+ */
+function practice_test_render_add_student_form($guardian_user_id) {
+    // Nonce for security
+    $nonce = wp_create_nonce('pt_link_student_nonce_' . $guardian_user_id);
+
+    $output = '<h3>Link a Student Account</h3>';
+    $output .= '<p>Enter the email address of the student account you wish to link to your guardian account.</p>';
+    $output .= '<form id="link-student-form" method="post">'; // JS will handle submission via AJAX
+    $output .= '<input type="hidden" name="action" value="link_student_account">'; // WP AJAX action
+    $output .= '<input type="hidden" name="nonce" value="' . esc_attr($nonce) . '">';
+    $output .= '<p>';
+    $output .= '<label for="student_email">Student Email:</label> ';
+    $output .= '<input type="email" id="student_email" name="student_email" required>';
+    $output .= '</p>';
+    $output .= '<p><input type="submit" value="Link Student Account" class="button button-primary"></p>';
+    $output .= '</form>';
+    $output .= '<div id="link-student-message" style="margin-top: 10px;"></div>'; // For success/error messages
+
+    // List currently linked students
+    global $wpdb;
+    $table_links = $wpdb->prefix . 'practice_test_guardian_student_links';
+    $table_subs = $wpdb->prefix . 'practice_test_subs';
+
+    $linked_students = $wpdb->get_results($wpdb->prepare(
+        "SELECT s.id, s.user_name, s.user_email
+         FROM $table_links l
+         JOIN $table_subs s ON l.student_user_id = s.id
+         WHERE l.guardian_user_id = %d AND l.link_status = 'active'
+         ORDER BY s.user_name ASC",
+        $guardian_user_id
+    ));
+
+    $output .= '<h4 style="margin-top: 25px;">Linked Student Accounts</h4>';
+    if (empty($linked_students)) {
+        $output .= '<p>You have not linked any student accounts yet.</p>';
+    } else {
+        $output .= '<ul>';
+        foreach ($linked_students as $student) {
+            // Add links/buttons to view student performance later
+            $output .= '<li>';
+            $output .= esc_html($student->user_name) . ' (' . esc_html($student->user_email) . ')';
+            // Example link structure for viewing student data (requires JS/AJAX handling)
+            $output .= ' - <a href="#" class="view-student-performance" data-student-id="' . esc_attr($student->id) . '">View Performance</a>';
+            // Add unlinking functionality later
+            $output .= '</li>';
+        }
+        $output .= '</ul>';
+    }
+
+
+    return $output;
+}
+
+
+// --- AJAX Handler for Linking Student Account ---
+
+function practice_test_link_student_account_callback() {
+    // 1. Security & Permissions Check
+    $guardian_user_id = get_current_user_id();
+    if (!$guardian_user_id) {
+        wp_send_json_error(['message' => 'User not logged in.'], 403);
+    }
+     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'pt_link_student_nonce_' . $guardian_user_id)) {
+        wp_send_json_error(['message' => 'Nonce verification failed.'], 403);
+    }
+    // Add capability check to ensure only guardians can do this
+    // if (!current_user_can('link_students')) { ... }
+
+    // 2. Get and Validate Input
+    $student_email = isset($_POST['student_email']) ? sanitize_email($_POST['student_email']) : '';
+    if (!is_email($student_email)) {
+        wp_send_json_error(['message' => 'Invalid student email address provided.'], 400);
+    }
+
+    global $wpdb;
+    $table_subs = $wpdb->prefix . 'practice_test_subs';
+    $table_links = $wpdb->prefix . 'practice_test_guardian_student_links';
+
+    // 3. Find Student User ID
+    $student_user = $wpdb->get_row($wpdb->prepare(
+        "SELECT id, user_role FROM $table_subs WHERE user_email = %s",
+        $student_email
+    ));
+
+    if (!$student_user) {
+        wp_send_json_error(['message' => 'No user found with that email address.'], 404);
+    }
+    if ($student_user->user_role !== 'student') {
+         wp_send_json_error(['message' => 'The user found with that email is not registered as a student.'], 400);
+    }
+    $student_user_id = $student_user->id;
+
+    // Prevent linking to self
+    if ($guardian_user_id === $student_user_id) {
+         wp_send_json_error(['message' => 'You cannot link your own account.'], 400);
+    }
+
+    // 4. Check if Link Already Exists
+    $existing_link = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM $table_links WHERE guardian_user_id = %d AND student_user_id = %d",
+        $guardian_user_id, $student_user_id
+    ));
+
+    if ($existing_link) {
+        wp_send_json_error(['message' => 'This student account is already linked.'], 409); // 409 Conflict
+    }
+
+    // 5. Create the Link
+    $result = $wpdb->insert(
+        $table_links,
+        array(
+            'guardian_user_id' => $guardian_user_id,
+            'student_user_id' => $student_user_id,
+            'link_status' => 'active' // Or 'pending' if confirmation is needed
+        ),
+        array('%d', '%d', '%s')
+    );
+
+    if ($result === false) {
+         wp_send_json_error(['message' => 'Failed to link student account. Database error.', 'db_error' => $wpdb->last_error], 500);
+    } else {
+        wp_send_json_success(['message' => 'Student account linked successfully!']);
+        // TODO: Add logic to list linked students after success
+    }
+}
+add_action('wp_ajax_link_student_account', 'practice_test_link_student_account_callback');
+
+
+// --- AJAX Handler for Loading Linked Student Performance ---
+
+function practice_test_load_student_performance_callback() {
+    // 1. Security & Permissions Check
+    $guardian_user_id = get_current_user_id();
+     if (!$guardian_user_id) {
+        wp_send_json_error(['message' => 'User not logged in.'], 403);
+    }
+     // Use the main members area nonce for this action as well
+     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'practice_test_members_nonce')) {
+        wp_send_json_error(['message' => 'Nonce verification failed.'], 403);
+    }
+     // Add capability check if needed
+
+    // 2. Get Student ID
+    $student_user_id = isset($_POST['student_id']) ? intval($_POST['student_id']) : 0;
+    if ($student_user_id <= 0) {
+         wp_send_json_error(['message' => 'Invalid student ID provided.'], 400);
+    }
+
+    // 3. Verify Guardian is Linked to this Student
+    global $wpdb;
+    $table_links = $wpdb->prefix . 'practice_test_guardian_student_links';
+    $is_linked = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM $table_links WHERE guardian_user_id = %d AND student_user_id = %d AND link_status = 'active'",
+        $guardian_user_id, $student_user_id
+    ));
+
+    if (!$is_linked) {
+         wp_send_json_error(['message' => 'You are not linked to this student account or permission denied.'], 403);
+    }
+
+    // 4. Get Student's Performance Data
+    $student_performance = practice_test_get_user_performance_breakdown($student_user_id);
+
+    // 5. Get Student Name for Display
+    $student_info = get_userdata($student_user_id);
+    $student_name = $student_info ? $student_info->display_name : 'Student';
+
+    // 6. Render HTML
+    $html_content = '<h3>Performance Breakdown for ' . esc_html($student_name) . '</h3>';
+    $html_content .= practice_test_render_performance_html($student_performance); // Reuse existing render function
+
+    wp_send_json_success(['html' => $html_content]);
+
+}
+add_action('wp_ajax_load_student_performance', 'practice_test_load_student_performance_callback');
+
+
+/**
+ * Renders HTML for the performance breakdown based on pre-calculated data.
+ */
+function practice_test_render_performance_html($performance) {
+     $output = '<h3>Performance Breakdown</h3>';
+
+    // Display Subject Stats
+    $output .= '<h4>By Subject Area</h4>';
+    if (empty($performance['subjects'])) {
+        $output .= '<p>No performance data available by subject yet.</p>';
+    } else {
+        $output .= '<table class="wp-list-table widefat striped practice-test-performance-table">';
+        $output .= '<thead><tr><th>Subject</th><th>Correct</th><th>Attempted</th><th>Accuracy</th></tr></thead>';
+        $output .= '<tbody>';
+        foreach ($performance['subjects'] as $subject => $stats) {
+            $output .= '<tr>';
+            $output .= '<td>' . esc_html($subject) . '</td>';
+            $output .= '<td>' . esc_html($stats['correct']) . '</td>';
+            $output .= '<td>' . esc_html($stats['total']) . '</td>';
+            $output .= '<td>' . esc_html($stats['accuracy']) . '%</td>';
+            $output .= '</tr>';
+        }
+        $output .= '</tbody></table>';
+    }
+
+     // Display Skill Stats
+    $output .= '<h4 style="margin-top: 20px;">By Skill</h4>';
+    if (empty($performance['skills'])) {
+        $output .= '<p>No performance data available by skill yet.</p>';
+    } else {
+        $output .= '<table class="wp-list-table widefat striped practice-test-performance-table">';
+        $output .= '<thead><tr><th>Skill</th><th>Correct</th><th>Attempted</th><th>Accuracy</th></tr></thead>';
+        $output .= '<tbody>';
+        foreach ($performance['skills'] as $skill => $stats) {
+            $output .= '<tr>';
+            $output .= '<td>' . esc_html($skill) . '</td>';
+            $output .= '<td>' . esc_html($stats['correct']) . '</td>';
+            $output .= '<td>' . esc_html($stats['total']) . '</td>';
+            $output .= '<td>' . esc_html($stats['accuracy']) . '%</td>';
+            $output .= '</tr>';
+        }
+        $output .= '</tbody></table>';
+    }
+    return $output;
+}
+
+/**
+ * Renders HTML for the user's test results history.
+ */
+function practice_test_render_results_history($user_id) {
+    global $wpdb;
+    $table_attempts = $wpdb->prefix . 'practice_test_test_attempts';
+    $table_tests = $wpdb->prefix . 'practice_test_tests';
+
+    $completed_attempts = $wpdb->get_results($wpdb->prepare(
+        "SELECT a.id, a.test_id, a.attempt_status, a.score, a.end_time, t.test_name
+         FROM $table_attempts a
+         JOIN $table_tests t ON a.test_id = t.id
+         WHERE a.user_id = %d AND a.attempt_status = 'completed'
+         ORDER BY a.end_time DESC",
+        $user_id
+    ));
+
+     $output = '<h3>Test Results History</h3>';
+     if (empty($completed_attempts)) {
+        $output .= '<p>You have not completed any tests yet.</p>';
+    } else {
+        $output .= '<table class="wp-list-table widefat striped practice-test-history-table">';
+        $output .= '<thead><tr><th>Test Name</th><th>Date Completed</th><th>Score</th><th>View Details</th></tr></thead>';
+        $output .= '<tbody>';
+        foreach ($completed_attempts as $attempt) {
+             $results_page_url = home_url('/test-results/'); // Adjust slug if needed
+             $details_url = add_query_arg('attempt', $attempt->id, $results_page_url);
+             $completed_date = date_format(date_create($attempt->end_time), 'Y-m-d H:i'); // Format date
+
+            $output .= '<tr>';
+            $output .= '<td>' . esc_html($attempt->test_name) . '</td>';
+            $output .= '<td>' . esc_html($completed_date) . '</td>';
+            $output .= '<td>' . esc_html(number_format($attempt->score, 2)) . '%</td>';
+            $output .= '<td><a href="' . esc_url($details_url) . '" class="button">View Results</a></td>';
+            $output .= '</tr>';
+        }
+        $output .= '</tbody></table>';
+    }
+    return $output;
+}

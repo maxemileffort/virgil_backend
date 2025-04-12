@@ -15,16 +15,19 @@ $table_tests = $wpdb->prefix . 'practice_test_tests';
 $table_test_questions = $wpdb->prefix . 'practice_test_test_questions';
 $table_test_attempts = $wpdb->prefix . 'practice_test_test_attempts';
 $table_test_resp = $wpdb->prefix . 'practice_test_test_resp';
+$table_guardian_student_links = $wpdb->prefix . 'practice_test_guardian_student_links'; // Added
 
 // SQL to drop tables
+$sql_links = "DROP TABLE IF EXISTS $table_guardian_student_links;";
 $sql_resp = "DROP TABLE IF EXISTS $table_test_resp;";
 $sql_attempts = "DROP TABLE IF EXISTS $table_test_attempts;";
 $sql_test_questions = "DROP TABLE IF EXISTS $table_test_questions;";
 $sql_tests = "DROP TABLE IF EXISTS $table_tests;";
 $sql_subs = "DROP TABLE IF EXISTS $table_subs;";
-$sql_questions = "DROP TABLE IF EXISTS $table_questions;"; // Note: $table_act was likely a typo for $table_questions
+$sql_questions = "DROP TABLE IF EXISTS $table_questions;";
 
 // Execute the SQL (in reverse order of potential dependencies if FOREIGN KEYs were used)
+$wpdb->query($sql_links); // Added
 $wpdb->query($sql_resp);
 $wpdb->query($sql_attempts);
 $wpdb->query($sql_test_questions);
